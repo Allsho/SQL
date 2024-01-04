@@ -14,3 +14,12 @@ VALUES (@SchemaName);
 -- Insert data into Claim_Table_Mapping
 INSERT INTO Claim_Table_Mapping (Tablename)
 VALUES (@TableName);
+
+
+/*
+(DT_WSTR, 4)YEAR(DT_DATE) + RIGHT("0" + (DT_WSTR, 2)MONTH(DT_DATE), 2) +
+(
+    FINDSTRING(UPPER(SUBSTRING(@[User::FileName], FINDSTRING(@[User::FileName], "_", 1) + 1, LEN(@[User::FileName]) - FINDSTRING(@[User::FileName], "_", 1) - 5)),
+    "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC", 1) + 2) % 12
+)
+*/
