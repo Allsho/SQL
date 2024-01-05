@@ -37,3 +37,58 @@ SET @DynamicSQL = '
 
 -- Execute the dynamic SQL
 EXEC sp_executesql @DynamicSQL;
+
+
+
+/*
+
+using System;
+using System.IO;
+using OfficeOpenXml;
+
+class Program
+{
+    static void Main()
+    {
+        try
+        {
+            // Replace "your_excel_file.xlsx" with the actual path to your Excel file
+            string excelFilePath = "your_excel_file.xlsx";
+
+            // Load Excel package
+            using (var package = new ExcelPackage(new FileInfo(excelFilePath)))
+            {
+                // Access the worksheet
+                var worksheet = package.Workbook.Worksheets[0];
+
+                // Access headers and fix formatting issues
+                FixHeaderFormatting(worksheet);
+
+                // Save the modified Excel file
+                package.Save();
+
+                Console.WriteLine("Header formatting fixed. You can now proceed with SSIS CSV conversion.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+
+    static void FixHeaderFormatting(ExcelWorksheet worksheet)
+    {
+        // Specify the column index where you want to fix header formatting
+        int columnIndex = 1; // Replace with the actual column index
+
+        // Access the header cell
+        var headerCell = worksheet.Cells[1, columnIndex];
+
+        // Modify the header as needed (remove line breaks, special characters, etc.)
+        string fixedHeaderText = headerCell.Text.Replace("\n", "").Replace("\r", "");
+
+        // Update the header cell
+        headerCell.Value = fixedHeaderText;
+    }
+}
+*/
