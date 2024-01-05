@@ -42,42 +42,30 @@ EXEC sp_executesql @DynamicSQL;
 
 /*
 
-using Excel = Microsoft.Office.Interop.Excel;
+import pandas as pd
 
-class Program
-{
-    static void Main()
-    {
-        // Replace "your_excel_file.xlsx" with the actual path to your Excel file
-        string excelFilePath = "your_excel_file.xlsx";
+def clean_header(header):
+    # Your cleaning logic goes here
+    cleaned_header = header.replace('\n', '').replace('\r', '').replace('#', '').strip()
+    return cleaned_header
 
-        Excel.Application excelApp = new Excel.Application();
-        Excel.Workbook workbook = excelApp.Workbooks.Open(excelFilePath);
-        Excel.Worksheet worksheet = (Excel.Worksheet)workbook.Sheets[1]; // Assuming the first sheet
+def clean_and_convert_excel_to_csv(input_excel_path, output_csv_path):
+    # Read the Excel file
+    df = pd.read_excel(input_excel_path)
 
-        // Access headers and fix formatting issues
-        FixHeaderFormatting(worksheet);
+    # Clean the header row
+    cleaned_headers = [clean_header(header) for header in df.columns]
+    df.columns = cleaned_headers
 
-        // Save the modified Excel file
-        workbook.Save();
-        workbook.Close();
-        excelApp.Quit();
-    }
+    # Save to CSV
+    df.to_csv(output_csv_path, index=False)
 
-    static void FixHeaderFormatting(Excel.Worksheet worksheet)
-    {
-        // Specify the column index where you want to fix header formatting
-        int columnIndex = 1; // Replace with the actual column index
+# Specify your input and output file paths
+input_excel_path = 'path/to/your/input_excel_file.xlsx'
+output_csv_path = 'path/to/your/output_csv_file.csv'
 
-        // Access the header cell
-        Excel.Range headerCell = (Excel.Range)worksheet.Cells[1, columnIndex];
+# Call the function to clean and convert
+clean_and_convert_excel_to_csv(input_excel_path, output_csv_path)
 
-        // Modify the header as needed (remove line breaks, special characters, etc.)
-        string fixedHeaderText = headerCell.Text.Replace("\n", "").Replace("\r", "");
-
-        // Update the header cell
-        headerCell.Value = fixedHeaderText;
-    }
-}
 
 */
