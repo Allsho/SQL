@@ -42,47 +42,35 @@ EXEC sp_executesql @DynamicSQL;
 
 /*
 
-using System;
-using System.IO;
-using OfficeOpenXml;
+using Excel = Microsoft.Office.Interop.Excel;
 
 class Program
 {
     static void Main()
     {
-        try
-        {
-            // Replace "your_excel_file.xlsx" with the actual path to your Excel file
-            string excelFilePath = "your_excel_file.xlsx";
+        // Replace "your_excel_file.xlsx" with the actual path to your Excel file
+        string excelFilePath = "your_excel_file.xlsx";
 
-            // Load Excel package
-            using (var package = new ExcelPackage(new FileInfo(excelFilePath)))
-            {
-                // Access the worksheet
-                var worksheet = package.Workbook.Worksheets[0];
+        Excel.Application excelApp = new Excel.Application();
+        Excel.Workbook workbook = excelApp.Workbooks.Open(excelFilePath);
+        Excel.Worksheet worksheet = (Excel.Worksheet)workbook.Sheets[1]; // Assuming the first sheet
 
-                // Access headers and fix formatting issues
-                FixHeaderFormatting(worksheet);
+        // Access headers and fix formatting issues
+        FixHeaderFormatting(worksheet);
 
-                // Save the modified Excel file
-                package.Save();
-
-                Console.WriteLine("Header formatting fixed. You can now proceed with SSIS CSV conversion.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred: {ex.Message}");
-        }
+        // Save the modified Excel file
+        workbook.Save();
+        workbook.Close();
+        excelApp.Quit();
     }
 
-    static void FixHeaderFormatting(ExcelWorksheet worksheet)
+    static void FixHeaderFormatting(Excel.Worksheet worksheet)
     {
         // Specify the column index where you want to fix header formatting
         int columnIndex = 1; // Replace with the actual column index
 
         // Access the header cell
-        var headerCell = worksheet.Cells[1, columnIndex];
+        Excel.Range headerCell = (Excel.Range)worksheet.Cells[1, columnIndex];
 
         // Modify the header as needed (remove line breaks, special characters, etc.)
         string fixedHeaderText = headerCell.Text.Replace("\n", "").Replace("\r", "");
@@ -91,4 +79,5 @@ class Program
         headerCell.Value = fixedHeaderText;
     }
 }
+
 */
