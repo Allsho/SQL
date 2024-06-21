@@ -1,0 +1,19 @@
+SUBSTRING(
+  @[User::ConnectionString],
+  FINDSTRING(@[User::ConnectionString], "Initial Catalog=", 1) + 16,
+  FINDSTRING(@[User::ConnectionString], ";", FINDSTRING(@[User::ConnectionString], "Initial Catalog=", 1)) - (FINDSTRING(@[User::ConnectionString], "Initial Catalog=", 1) + 16)
+)
+
+
+SUBSTRING(
+  @[User::ConnectionString],
+  FINDSTRING(@[User::ConnectionString], "Data Source=", 1) + 12,
+  FINDSTRING(@[User::ConnectionString], ";", FINDSTRING(@[User::ConnectionString], "Data Source=", 1)) - (FINDSTRING(@[User::ConnectionString], "Data Source=", 1) + 12)
+)
+
+
+SUBSTRING(
+  @[User::ConnectionString],
+  FINDSTRING(@[User::ConnectionString], "Integrated Security=", 1) + 20,
+  FINDSTRING(@[User::ConnectionString], ";", FINDSTRING(@[User::ConnectionString], "Integrated Security=", 1)) - (FINDSTRING(@[User::ConnectionString], "Integrated Security=", 1) + 20)
+)
