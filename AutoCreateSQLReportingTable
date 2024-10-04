@@ -23,8 +23,9 @@ BEGIN
     AND TABLE_NAME = @StagingTable;
 
     -- Step 2: Build the CREATE TABLE SQL statement for the reporting table
-    SET @SQL = 'CREATE TABLE ' + QUOTENAME(@ReportingDatabase) + '.' + QUOTENAME(@ReportingSchema) + '.' + QUOTENAME(@ReportingTable) + ' (';
-    
+    SET @SQL = 'USE ' + QUOTENAME(@ReportingDatabase) + '; ';  -- Switch to the reporting database
+    SET @SQL = @SQL + 'CREATE TABLE ' + QUOTENAME(@ReportingSchema) + '.' + QUOTENAME(@ReportingTable) + ' (';
+
     -- Step 3: Add the IDENTITY, rowinsertdatetime, and contractkey columns first
     SET @SQL = @SQL + 'Id INT IDENTITY(1,1) PRIMARY KEY, ';
     SET @SQL = @SQL + 'rowinsertdatetime DATETIME DEFAULT GETDATE(), ';
