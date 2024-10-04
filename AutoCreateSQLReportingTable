@@ -11,36 +11,50 @@ BEGIN
     DECLARE @ColumnSQL NVARCHAR(MAX) = '';
 
     -- Step 1: Build the query to get the columns from the staging database dynamically
-    SELECT @ColumnSQL = STRING_AGG(
-        QUOTENAME(COLUMN_NAME) + ' ' + DATA_TYPE + 
-        CASE 
-            WHEN DATA_TYPE IN ('varchar', 'char', 'nvarchar', 'nchar') 
-                THEN '(' + CAST(CHARACTER_MAXIMUM_LENGTH AS NVARCHAR(10)) + ')' 
-            ELSE '' 
-        END, ', ')
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = @StagingSchema
-    AND TABLE_NAME = @StagingTable;
+    DECLARE @DynamicSQL NVARCHAR(MAX);
+    SET @DynamicSQL = 'SELECT @ColumnSQLOUT = STRING_AGG(
+                           QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
+                           CASE 
+                               WHEN DATA_TYPE IN (''varchar'', ''char'', ''nvarchar'', ''nchar'') 
+                                   THEN ''('' + CAST(CHARACTER_MAXIMUM_LENGTH AS NVARCHAR(10)) + '')'' 
+                               ELSE '''' 
+                           END, '','')
+                       FROM ' + QUOTENAME(@StagingDatabase) + '.INFORMATION_SCHEMA.COLUMNS
+                       WHERE TABLE_SCHEMA = @StagingSchema
+                         AND TABLE_NAME = @StagingTable';
 
-    -- Step 2: Build the CREATE TABLE SQL statement for the reporting table
-    SET @SQL = 'USE ' + QUOTENAME(@ReportingDatabase) + '; ';  -- Switch to the reporting database
-    SET @SQL = @SQL + 'CREATE TABLE ' + QUOTENAME(@ReportingSchema) + '.' + QUOTENAME(@ReportingTable) + ' (';
+    -- Step 2: Execute dynamic SQL to retrieve column definitions
+    EXEC sp_executesql 
+        @DynamicSQL,
+        N'@StagingSchema NVARCHAR(128), @ColumnSQLOUT NVARCHAR(MAX) OUTPUT',
+        @StagingSchema = @StagingSchema,
+        @ColumnSQLOUT = @ColumnSQL OUTPUT;
 
-    -- Step 3: Add the IDENTITY, rowinsertdatetime, and contractkey columns first
+    -- Check if @ColumnSQL has been populated
+    IF @ColumnSQL IS NULL
+    BEGIN
+        RAISERROR('No columns found for the specified table: %s.%s', 16, 1, @StagingSchema, @StagingTable);
+        RETURN;
+    END
+
+    -- Step 3: Build the CREATE TABLE SQL statement for the reporting table
+    SET @SQL = 'CREATE TABLE ' + QUOTENAME(@ReportingDatabase) + '.' + QUOTENAME(@ReportingSchema) + '.' + QUOTENAME(@ReportingTable) + ' (';
+
+    -- Step 4: Add the IDENTITY, rowinsertdatetime, and contractkey columns first
     SET @SQL = @SQL + 'Id INT IDENTITY(1,1) PRIMARY KEY, ';
     SET @SQL = @SQL + 'rowinsertdatetime DATETIME DEFAULT GETDATE(), ';
     SET @SQL = @SQL + 'contractkey INT, ';
 
-    -- Step 4: Add the dynamically generated columns from the staging table
+    -- Step 5: Add the dynamically generated columns from the staging table
     SET @SQL = @SQL + @ColumnSQL + ', ';
 
-    -- Step 5: Add EffectiveKey and SourceFileName columns at the end
+    -- Step 6: Add EffectiveKey and SourceFileName columns at the end
     SET @SQL = @SQL + 'EffectiveKey INT, ';
     SET @SQL = @SQL + 'SourceFileName NVARCHAR(255));';
 
-    -- Debug: Print the final SQL for review
-    PRINT @SQL;
+    -- Step 7: Finalize the SQL statement and display it
+    SELECT @SQL AS CreatedTableSQL;
 
-    -- Step 6: Execute the final SQL to create the reporting table
+    -- Step 8: Execute the final SQL to create the reporting table
     EXEC sp_executesql @SQL;
 END;
