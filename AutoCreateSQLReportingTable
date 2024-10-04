@@ -9,62 +9,37 @@ AS
 BEGIN
     DECLARE @SQL NVARCHAR(MAX) = '';
     DECLARE @ColumnSQL NVARCHAR(MAX) = '';
-    DECLARE @DynamicSQL NVARCHAR(MAX) = '';
 
-    -- Step 1: Build the query to get the columns from the staging database
-    SET @DynamicSQL = 'SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH
-                       FROM ' + QUOTENAME(@StagingDatabase) + '.INFORMATION_SCHEMA.COLUMNS
-                       WHERE TABLE_SCHEMA = @StagingSchema
-                         AND TABLE_NAME = @StagingTable';
+    -- Step 1: Build the query to get the columns from the staging database dynamically
+    SELECT @ColumnSQL = STRING_AGG(
+        QUOTENAME(COLUMN_NAME) + ' ' + DATA_TYPE + 
+        CASE 
+            WHEN DATA_TYPE IN ('varchar', 'char', 'nvarchar', 'nchar') 
+                THEN '(' + CAST(CHARACTER_MAXIMUM_LENGTH AS NVARCHAR(10)) + ')' 
+            ELSE '' 
+        END, ', ')
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @StagingSchema
+    AND TABLE_NAME = @StagingTable;
 
-    -- Step 2: Retrieve the columns from the staging table dynamically
-    EXEC sp_executesql 
-        @DynamicSQL,
-        N'@StagingSchema NVARCHAR(128), @StagingTable NVARCHAR(128)',
-        @StagingSchema = @StagingSchema,
-        @StagingTable = @StagingTable;
-
-    -- Step 3: Start building the CREATE TABLE statement for the reporting table
+    -- Step 2: Build the CREATE TABLE SQL statement for the reporting table
     SET @SQL = 'CREATE TABLE ' + QUOTENAME(@ReportingDatabase) + '.' + QUOTENAME(@ReportingSchema) + '.' + QUOTENAME(@ReportingTable) + ' (';
-
-    -- Step 4: Add the IDENTITY column first
+    
+    -- Step 3: Add the IDENTITY, rowinsertdatetime, and contractkey columns first
     SET @SQL = @SQL + 'Id INT IDENTITY(1,1) PRIMARY KEY, ';
-
-    -- Step 5: Add rowinsertdatetime and contractkey columns
     SET @SQL = @SQL + 'rowinsertdatetime DATETIME DEFAULT GETDATE(), ';
     SET @SQL = @SQL + 'contractkey INT, ';
 
-    -- Step 6: Loop through each column from the staging table and append it to the CREATE TABLE statement
-    DECLARE @ColumnName NVARCHAR(128), @DataType NVARCHAR(50), @MaxLength INT;
-    DECLARE column_cursor CURSOR FOR
-        SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH
-        FROM tempdb.dbo.#ColumnData; -- Using a temporary table to store column data
+    -- Step 4: Add the dynamically generated columns from the staging table
+    SET @SQL = @SQL + @ColumnSQL + ', ';
 
-    OPEN column_cursor;
-    FETCH NEXT FROM column_cursor INTO @ColumnName, @DataType, @MaxLength;
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        -- Build the column definitions
-        SET @SQL = @SQL + QUOTENAME(@ColumnName) + ' ' + @DataType +
-                   CASE 
-                        WHEN @MaxLength IS NOT NULL THEN '(' + CAST(@MaxLength AS NVARCHAR(10)) + ')'
-                        ELSE ''
-                   END + ', ';
-        FETCH NEXT FROM column_cursor INTO @ColumnName, @DataType, @MaxLength;
-    END;
-    CLOSE column_cursor;
-    DEALLOCATE column_cursor;
-
-    -- Step 7: Add EffectiveKey and SourceFileName columns at the end
+    -- Step 5: Add EffectiveKey and SourceFileName columns at the end
     SET @SQL = @SQL + 'EffectiveKey INT, ';
-    SET @SQL = @SQL + 'SourceFileName NVARCHAR(255)';
+    SET @SQL = @SQL + 'SourceFileName NVARCHAR(255));';
 
-    -- Step 8: Finalize the SQL statement
-    SET @SQL = @SQL + ');';
-
-    -- Debug: Print the SQL for debugging purposes
+    -- Debug: Print the final SQL for review
     PRINT @SQL;
 
-    -- Execute the generated SQL to create the table
+    -- Step 6: Execute the final SQL to create the reporting table
     EXEC sp_executesql @SQL;
 END;
