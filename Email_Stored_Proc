@@ -32,3 +32,21 @@ BEGIN
     -- Output the HTML formatted data
     SELECT @EmailBody AS EmailBody;
 END;
+
+
+public void Main()
+{
+    // Cast the EmailBody variable from Object to String
+    string emailBody = string.Empty;
+
+    // Check if EmailBody is not null and convert
+    if (Dts.Variables["User::EmailBody"].Value != null)
+    {
+        emailBody = Dts.Variables["User::EmailBody"].Value.ToString();
+    }
+
+    // Assign the email body to the new string variable
+    Dts.Variables["User::EmailBodyString"].Value = emailBody;
+
+    Dts.TaskResult = (int)ScriptResults.Success;
+}
