@@ -1,0 +1,23 @@
+CREATE PROCEDURE dbo.GenerateEmailBody
+AS
+BEGIN
+    DECLARE @EmailBody NVARCHAR(MAX);
+
+    -- Start HTML table structure with a header row
+    SET @EmailBody = 
+        '<html><body><table border="1" cellspacing="0" cellpadding="4">' +
+        '<tr><th>Column1</th><th>Column2</th><th>Column3</th></tr>'; -- Modify column names as needed
+
+    -- Append each row in HTML table format
+    SELECT @EmailBody += 
+        '<tr><td>' + ISNULL(CAST(Column1 AS NVARCHAR(MAX)), '') + '</td>' +
+        '<td>' + ISNULL(CAST(Column2 AS NVARCHAR(MAX)), '') + '</td>' +
+        '<td>' + ISNULL(CAST(Column3 AS NVARCHAR(MAX)), '') + '</td></tr>'
+    FROM YourTable;  -- Replace YourTable with your actual table
+
+    -- Close HTML tags
+    SET @EmailBody += '</table></body></html>';
+
+    -- Return the HTML formatted table
+    SELECT @EmailBody AS EmailBody;
+END
