@@ -8,12 +8,21 @@ BEGIN
         '<html><body><table border="1" cellspacing="0" cellpadding="4">' +
         '<tr><th>Column1</th><th>Column2</th><th>Column3</th></tr>'; -- Modify column names as needed
 
-    -- Append each row in HTML table format
-    SELECT @EmailBody += 
-        '<tr><td>' + ISNULL(CAST(Column1 AS NVARCHAR(MAX)), '') + '</td>' +
-        '<td>' + ISNULL(CAST(Column2 AS NVARCHAR(MAX)), '') + '</td>' +
-        '<td>' + ISNULL(CAST(Column3 AS NVARCHAR(MAX)), '') + '</td></tr>'
-    FROM YourTable;  -- Replace YourTable with your actual table
+    -- Check if data exists in the table
+    IF EXISTS (SELECT 1 FROM YourTable)  -- Replace YourTable with your actual table
+    BEGIN
+        -- Append each row in HTML table format
+        SELECT @EmailBody += 
+            '<tr><td>' + ISNULL(CAST(Column1 AS NVARCHAR(MAX)), '') + '</td>' +
+            '<td>' + ISNULL(CAST(Column2 AS NVARCHAR(MAX)), '') + '</td>' +
+            '<td>' + ISNULL(CAST(Column3 AS NVARCHAR(MAX)), '') + '</td></tr>'
+        FROM YourTable;
+    END
+    ELSE
+    BEGIN
+        -- No data available message
+        SET @EmailBody += '<tr><td colspan="3">No data available</td></tr>';
+    END
 
     -- Close HTML tags
     SET @EmailBody += '</table></body></html>';
