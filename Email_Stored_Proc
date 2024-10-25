@@ -1,32 +1,34 @@
-CREATE PROCEDURE dbo.GenerateEmailBody
+CREATE PROCEDURE dbo.GetDailyPayorSummary
 AS
 BEGIN
     DECLARE @EmailBody NVARCHAR(MAX);
 
     -- Start HTML table structure with a header row
     SET @EmailBody = 
-        '<html><body><table border="1" cellspacing="0" cellpadding="4">' +
-        '<tr><th>Column1</th><th>Column2</th><th>Column3</th></tr>'; -- Modify column names as needed
+        '<html><body><h3>Daily Payor Table Summary</h3>' +
+        '<table border="1" cellspacing="0" cellpadding="4">' +
+        '<tr><th>Payor</th><th>Most Recent InsertDateTime</th><th>RowCount</th><th>SourceFileName</th></tr>';
 
-    -- Check if data exists in the table
-    IF EXISTS (SELECT 1 FROM YourTable)  -- Replace YourTable with your actual table
-    BEGIN
-        -- Append each row in HTML table format
-        SELECT @EmailBody += 
-            '<tr><td>' + ISNULL(CAST(Column1 AS NVARCHAR(MAX)), '') + '</td>' +
-            '<td>' + ISNULL(CAST(Column2 AS NVARCHAR(MAX)), '') + '</td>' +
-            '<td>' + ISNULL(CAST(Column3 AS NVARCHAR(MAX)), '') + '</td></tr>'
-        FROM YourTable;
-    END
-    ELSE
-    BEGIN
-        -- No data available message
-        SET @EmailBody += '<tr><td colspan="3">No data available</td></tr>';
-    END
+    -- Use UNION ALL to combine each payor's most recent data
+    SET @EmailBody += (
+        SELECT 
+            STRING_AGG(
+                '<tr><td>' + Payor + '</td><td>' + CONVERT(VARCHAR, InsertDateTime, 120) + '</td>' +
+                '<td>' + CAST(RowCount AS NVARCHAR) + '</td><td>' + ISNULL(SourceFileName, '') + '</td></tr>', 
+                '') 
+        FROM (
+            SELECT TOP 1 'Aetna' AS Payor, InsertDateTime, RowCount, SourceFileName FROM Aetna ORDER BY InsertDateTime DESC
+            UNION ALL
+            SELECT TOP 1 'Anthem' AS Payor, InsertDateTime, RowCount, SourceFileName FROM Anthem ORDER BY InsertDateTime DESC
+            UNION ALL
+            SELECT TOP 1 'Cigna' AS Payor, InsertDateTime, RowCount, SourceFileName FROM Cigna ORDER BY InsertDateTime DESC
+            -- Add more payors as needed
+        ) AS PayorData
+    );
 
     -- Close HTML tags
     SET @EmailBody += '</table></body></html>';
 
-    -- Return the HTML formatted table
+    -- Output the HTML formatted data
     SELECT @EmailBody AS EmailBody;
-END
+END;
