@@ -9,8 +9,8 @@ BEGIN
         '<table border="1" cellspacing="0" cellpadding="4">' +
         '<tr><th>Payor</th><th>Most Recent InsertDateTime</th><th>RowCount</th><th>SourceFileName</th></tr>';
 
-    -- Use UNION ALL to combine each payor's most recent data
-    SET @EmailBody += (
+    -- Use STRING_AGG to combine each payor's data; if no data, default message
+    SET @EmailBody += ISNULL((
         SELECT 
             STRING_AGG(
                 '<tr><td>' + Payor + '</td><td>' + CONVERT(VARCHAR, InsertDateTime, 120) + '</td>' +
@@ -24,7 +24,7 @@ BEGIN
             SELECT TOP 1 'Cigna' AS Payor, InsertDateTime, RowCount, SourceFileName FROM Cigna ORDER BY InsertDateTime DESC
             -- Add more payors as needed
         ) AS PayorData
-    );
+    ), '<tr><td colspan="4">No data available</td></tr>');
 
     -- Close HTML tags
     SET @EmailBody += '</table></body></html>';
