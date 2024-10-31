@@ -2,9 +2,10 @@ CREATE PROCEDURE dbo.GetDailyPayorSummary
 AS
 BEGIN
     DECLARE @EmailBody VARCHAR(MAX);  -- Using VARCHAR
+    DECLARE @RowColor NVARCHAR(10);   -- Variable to hold alternating row color
     SET @EmailBody = '';  -- Initialize to an empty string
 
-    -- Start HTML table structure with inline CSS styling for a polished look
+    -- Start HTML table structure with inline CSS styling
     SET @EmailBody = 
         '<html><body>' +
         '<h2 style="color:#2E86C1;">Daily Payor Table Summary</h2>' +
@@ -15,17 +16,18 @@ BEGIN
 
     -- Populate EmailBody with data from tables
     SET @EmailBody += ISNULL((
-        SELECT 
-            STRING_AGG(
-                '<tr style="background-color:' + 
-                CASE WHEN (ROW_NUMBER() OVER (ORDER BY InsertDateTime DESC) % 2 = 0) THEN '#F2F2F2' ELSE '#FFFFFF' END + 
-                ';">' +
-                '<td style="padding:8px;">' + Payor + '</td>' +
-                '<td style="padding:8px;">' + CONVERT(VARCHAR, InsertDateTime, 120) + '</td>' +
-                '<td style="padding:8px;">' + CAST(EffectiveKey AS VARCHAR) + '</td>' +
-                '<td style="padding:8px;">' + CAST(RowCount AS VARCHAR) + '</td>' +
-                '<td style="padding:8px;">' + ISNULL(SourceFileName, '') + '</td></tr>', 
-                '') 
+        SELECT STRING_AGG(
+            CASE 
+                WHEN (ROW_NUMBER() OVER (ORDER BY InsertDateTime DESC)) % 2 = 0 
+                    THEN '<tr style="background-color:#F2F2F2;">' 
+                    ELSE '<tr style="background-color:#FFFFFF;">' 
+            END +
+            '<td style="padding:8px;">' + Payor + '</td>' +
+            '<td style="padding:8px;">' + CONVERT(VARCHAR, InsertDateTime, 120) + '</td>' +
+            '<td style="padding:8px;">' + CAST(EffectiveKey AS VARCHAR) + '</td>' +
+            '<td style="padding:8px;">' + CAST(RowCount AS VARCHAR) + '</td>' +
+            '<td style="padding:8px;">' + ISNULL(SourceFileName, '') + '</td></tr>', 
+            '') 
         FROM (
             SELECT TOP 1 'Aetna' AS Payor, InsertDateTime, EffectiveKey, RowCount, SourceFileName FROM Aetna ORDER BY InsertDateTime DESC
             UNION ALL
@@ -41,6 +43,7 @@ BEGIN
     -- Output the EmailBody
     SELECT @EmailBody AS EmailBody;  -- This should match SSIS variable name
 END;
+
 
 
 
