@@ -1,0 +1,26 @@
+	SET @sSql = N'
+	INSERT INTO ' + @TableName + N' WITH( TABLOCK )
+	( ' + @SKey
+	+ N', Sheet_X ' --Update 4
+	+ N')
+		<<Logic for Populating Change Values Table>>
+		'
+
+
+	DECLARE 
+		@temptable nvarchar(50) = '##Changes',
+		@Date1 datetime = DATEADD(DAY,-1,cast(CURRENT_TIMESTAMP as Date));
+
+	EXEC dbo.Tracking_Changes
+		 @SQLTable = 'Sheet'
+		,@StartTime = @Date1
+		,@TempTableName = @temptable
+
+	SELECT
+		sht.SheetKey, sht.Dept
+	FROM 
+		##Changes as chge 
+	INNER JOIN 
+		Sheet as sht
+	ON 
+		sht.Key = chge.Key
