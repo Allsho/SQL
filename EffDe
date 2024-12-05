@@ -1,0 +1,42 @@
+CREATE FUNCTION dbo.EffectiveKey
+(
+    @FileName NVARCHAR(255),  -- Input filename
+    @PayerType NVARCHAR(50) = NULL -- Optional: specify payer type if needed
+)
+RETURNS NVARCHAR(6) -- Returns formatted date as YYYYMM
+AS
+BEGIN
+    DECLARE @DatePart NVARCHAR(50);
+    DECLARE @Month NVARCHAR(2);
+    DECLARE @Year NVARCHAR(4);
+
+    -- Default date part extraction logic
+    SET @DatePart = 
+        LEFT(
+            REVERSE(SUBSTRING(REVERSE(@FileName), CHARINDEX('-', REVERSE(@FileName)) + 1, LEN(@FileName))), 
+            CHARINDEX('.', REVERSE(SUBSTRING(REVERSE(@FileName), CHARINDEX('-', REVERSE(@FileName)) + 1, LEN(@FileName)))) - 1
+        );
+
+    -- Map month names to numbers using CASE
+    SET @Month = CASE
+        WHEN @DatePart LIKE 'January%' THEN '01'
+        WHEN @DatePart LIKE 'February%' THEN '02'
+        WHEN @DatePart LIKE 'March%' THEN '03'
+        WHEN @DatePart LIKE 'April%' THEN '04'
+        WHEN @DatePart LIKE 'May%' THEN '05'
+        WHEN @DatePart LIKE 'June%' THEN '06'
+        WHEN @DatePart LIKE 'July%' THEN '07'
+        WHEN @DatePart LIKE 'August%' THEN '08'
+        WHEN @DatePart LIKE 'September%' THEN '09'
+        WHEN @DatePart LIKE 'October%' THEN '10'
+        WHEN @DatePart LIKE 'November%' THEN '11'
+        WHEN @DatePart LIKE 'December%' THEN '12'
+    END;
+
+    -- Extract the year
+    SET @Year = RIGHT(@DatePart, 4);
+
+    -- Combine into YYYYMM
+    RETURN CONCAT(@Year, @Month);
+END;
+GO
