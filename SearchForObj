@@ -1,0 +1,15 @@
+USE YourDatabaseName; -- Replace with your database name
+GO
+
+SELECT DISTINCT 
+    o.name AS ObjectName,
+    o.type_desc AS ObjectType,
+    m.definition AS ObjectDefinition
+FROM 
+    sys.sql_modules AS m
+INNER JOIN 
+    sys.objects AS o ON m.object_id = o.object_id
+WHERE 
+    m.definition LIKE '%dbo.Control_Totals%'
+ORDER BY 
+    ObjectType, ObjectName;
