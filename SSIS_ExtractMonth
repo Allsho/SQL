@@ -1,0 +1,39 @@
+(
+FINDSTRING(@[User::fileName], "January", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Jan", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "01"  :
+
+FINDSTRING(@[User::fileName], "February", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Feb", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "02"  :
+
+FINDSTRING(@[User::fileName], "March", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Mar", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "03"  :
+
+FINDSTRING(@[User::fileName], "April", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Apr", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "04"  :
+
+FINDSTRING(@[User::fileName], "May", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "05"  :
+
+FINDSTRING(@[User::fileName], "June", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Jun", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "06"  :
+
+FINDSTRING(@[User::fileName], "July", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Jul", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "07"  :
+
+FINDSTRING(@[User::fileName], "August", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Aug", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "08"  :
+
+FINDSTRING(@[User::fileName], "September", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Sep", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "09"  :
+
+FINDSTRING(@[User::fileName], "October", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Oct", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "10"  :
+
+FINDSTRING(@[User::fileName], "November", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Nov", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "11"  :
+
+FINDSTRING(@[User::fileName], "December", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Dec", 1) > 0 && FINDSTRING(@[User::fileName], (DT_STR, 4, 1252) YEAR(GETDATE()), 1) > 0 ? (DT_STR, 4, 1252)YEAR(GETDATE()) +  "12"  : 
+
+FINDSTRING(@[User::fileName], "December", 1) > 0 && FINDSTRING(@[User::fileName], (DT_WSTR, 4) DATEPART("yyyy", DATEADD( "yyyy", -1, GETDATE())), 1) > 0 ||
+FINDSTRING(@[User::fileName], "Dec", 1) > 0 && FINDSTRING(@[User::fileName], (DT_WSTR, 4) DATEPART("yyyy", DATEADD( "yyyy", -1, GETDATE())), 1) > 0 ? (DT_WSTR, 4) DATEPART("yyyy", DATEADD( "yyyy", -1, GETDATE())) +  "12"  : "Error"
+)
