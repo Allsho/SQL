@@ -1,0 +1,7 @@
+DECLARE @FileName NVARCHAR(255) = 'Test Tets Test (Tets)_11.7.24.xlsx';
+
+-- Extract the month (11)
+SELECT LEFT(SUBSTRING(@FileName, CHARINDEX('_', @FileName) + 1, CHARINDEX('.', @FileName, CHARINDEX('_', @FileName)) - CHARINDEX('_', @FileName) - 1), CHARINDEX('.', SUBSTRING(@FileName, CHARINDEX('_', @FileName) + 1, 50)) - 1) AS Month;
+
+-- Extract the year (24)
+SELECT RIGHT(SUBSTRING(@FileName, CHARINDEX('_', @FileName) + 1, CHARINDEX('.', @FileName, CHARINDEX('_', @FileName) + 1) + 4), 2) AS Year;
