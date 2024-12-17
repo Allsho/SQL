@@ -1,0 +1,9 @@
+(DT_STR, 2, 1252)(FINDSTRING("January February March April May June July August September October November December", 
+SUBSTRING(@[User::FileName], 
+FINDSTRING(@[User::FileName], "_", 1) + 1, 
+FINDSTRING(@[User::FileName], ".xlsx", 1) - FINDSTRING(@[User::FileName], "_", 1) - 5), 
+1) / 9 + 1) + 
+SUBSTRING(@[User::FileName], 
+FINDSTRING(@[User::FileName], "_", 1) + 1 + LEN(SUBSTRING(@[User::FileName], 
+FINDSTRING(@[User::FileName], "_", 1) + 1, 
+FINDSTRING(@[User::FileName], ".xlsx", 1) - FINDSTRING(@[User::FileName], "_", 1) - 5)), 4)
