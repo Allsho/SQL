@@ -1,0 +1,33 @@
+CREATE TABLE FileProcessingMapping (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Payor NVARCHAR(255) NOT NULL,
+    SourcePath NVARCHAR(255) NOT NULL,
+    DestinationPath NVARCHAR(255) NOT NULL,
+    FilePattern NVARCHAR(255) NOT NULL,
+    ActionType NVARCHAR(50) NOT NULL,
+    IsBatch BIT NOT NULL,
+    BatchFileName NVARCHAR(255),
+    RemoveExtension BIT NOT NULL,
+    NewFileName NVARCHAR(255),
+    ArchiveSubFolder NVARCHAR(255),
+    IsActive BIT NOT NULL,
+    Step INT NOT NULL
+);
+
+CREATE TABLE ExclusionPatterns (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Payor NVARCHAR(255) NOT NULL,
+    Step INT NOT NULL,
+    Pattern NVARCHAR(255) NOT NULL
+);
+
+CREATE TABLE FileTransferLog (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    SourcePath NVARCHAR(255) NOT NULL,
+    DestinationPath NVARCHAR(255) NOT NULL,
+    FileName NVARCHAR(255) NOT NULL,
+    ActionType NVARCHAR(50) NOT NULL,
+    TransferTime DATETIME NOT NULL,
+    Status NVARCHAR(50) NOT NULL,
+    ErrorMessage NVARCHAR(255)
+);
