@@ -1,0 +1,80 @@
+USE []
+GO
+/****** Object:  StoredProcedure [dbo].[usp_Claim_Data_Mappings_New]    Script Date: 6/26/2025 1:04:02 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- Create the stored procedure
+ALTER     PROCEDURE [dbo].[usp_Claim_Data_Mappings]
+	 @SchemaName VARCHAR(50)
+	,@StagingTableName VARCHAR(50) --Passing in the Id to Staging Tables
+AS
+BEGIN
+	SET NOCOUNT ON;
+	DECLARE @ErrorOccurred BIT = 0;
+
+	BEGIN TRY
+		-- Start a transaction
+		BEGIN TRAN;
+
+		DECLARE @SQLStatements NVARCHAR(MAX);
+		SET @SQLStatements = '';
+
+		-- Construct dynamic SQL to move data fro all mappings with a timestamp column and deduplication
+		SELECT @SQLStatements = 
+			'INSERT INTO ' + ReportingDatabaseName + '.' + SchemaName + '.' + ReportingTableName + ' (' + STRING_AGG(ReportingColumnName, ', ') + ') ' +
+			
+			'SELECT ' + STRING_AGG(ISNULL(TransformationRules, StagingColumnName), ', ') +
+			' FROM ' + StagingDatabaseName + '.' + SchemaName + '.' + StagingTableName +
+			' WHERE NOT EXISTS (SELECT 1 FROM ' + ReportingDatabaseName + '.' + SchemaName + '.' + ReportingTableName + 
+			' WHERE ' + ReportingTableName + '.' + 'SourceFileName = ' + StagingTableName + '.' + 'SourceFileName);'
+		FROM ClaimsStage.ETL.Dynamic_Column_Mapping
+		WHERE [SchemaName] = @SchemaName
+		AND StagingTableName = @StagingTableName
+		GROUP BY
+			 SchemaName
+			,StagingDatabaseName
+			,StagingTableName
+			,ReportingDatabaseName
+			,ReportingTableName;
+
+		-- Display SQL Statments
+		PRINT 'SQL Statements:';
+		PRINT @SQLStatements;
+
+		-- Execute the dynamic SQL
+		EXEC sp_executesql @SQLStatements;
+
+		-- Commit the transaction
+		COMMIT;
+
+		-- Successful execution
+		PRINT 'Data moved successfully with deduplication.';
+	END TRY
+	BEGIN CATCH
+		-- An error occurred, so rollback the transaction
+		IF @@TRANCOUNT > 0
+			ROLLBACK;
+
+		-- Set the error flag
+		SET @ErrorOccurred = 1;
+
+		-- Handle errors (log, report, and/or take appropriate actions)
+		DECLARE @ErrorMessage NVARCHAR(MAX) = ERROR_MESSAGE();
+		-- Log the error with additional details (e.g., mapping, table)
+		INSERT INTO Claims.ETL.Claims_ErrorLog (LogTimeStamp, [Message], IsError)
+		VALUES (GETDATE(), ' Data Insert Error: ' + @ErrorMessage, 1);
+
+		-- Re-throw the error for further handling
+		THROW;
+	END CATCH;
+
+	-- Logging (customize as needed)
+	INSERT INTO Claims.ETL.Claims_Log (LogTimeStamp, [Message], IsError)
+	VALUES (GETDATE(), 'Data movement completed with deduplication.', @ErrorOccurred);
+
+	-- End of the stored procedure
+END;
