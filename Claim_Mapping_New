@@ -80,32 +80,40 @@ BEGIN
 END;
 
 SELECT @SQLStatements = 
-N'
-DECLARE @BatchSize INT = 10000;
-DECLARE @StartRow INT = 1;
-DECLARE @EndRow INT;
+    'DECLARE @BatchSize INT = 10000;
+     DECLARE @StartRow INT = 1;
+     DECLARE @EndRow INT;
 
-WHILE 1 = 1
-BEGIN
-    SET @EndRow = @StartRow + @BatchSize - 1;
+     WHILE 1 = 1
+     BEGIN
+         SET @EndRow = @StartRow + @BatchSize - 1;
 
-    ;WITH CTE_Batched AS (
-        SELECT ' + STRING_AGG(ISNULL(TransformationRules, StagingColumnName), ', ') + ',
-               ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
-        FROM ' + StagingDatabaseName + '.' + SchemaName + '.' + StagingTableName + '
-        WHERE NOT EXISTS (
-            SELECT 1 FROM ' + ReportingDatabaseName + '.' + SchemaName + '.' + ReportingTableName + '
-            WHERE ' + ReportingTableName + '.SourceFileName = ' + StagingTableName + '.SourceFileName
-        )
-    )
-    INSERT INTO ' + ReportingDatabaseName + '.' + SchemaName + '.' + ReportingTableName + ' (' + STRING_AGG(ReportingColumnName, ', ') + ')
-    SELECT ' + STRING_AGG(ISNULL(TransformationRules, StagingColumnName), ', ') + '
-    FROM CTE_Batched
-    WHERE rn BETWEEN @StartRow AND @EndRow;
+         ;WITH CTE_Batched AS (
+             SELECT ' + STRING_AGG(ISNULL(dc.TransformationRules, dc.StagingColumnName), ', ') + ',
+                    ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
+             FROM [' + dc.StagingDatabaseName + '].[' + dc.SchemaName + '].[' + dc.StagingTableName + '] stg
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM [' + dc.ReportingDatabaseName + '].[' + dc.SchemaName + '].[' + dc.ReportingTableName + '] rpt
+                 WHERE rpt.[SourceFileName] = stg.[SourceFileName]
+             )
+         )
+         INSERT INTO [' + dc.ReportingDatabaseName + '].[' + dc.SchemaName + '].[' + dc.ReportingTableName + '] (' +
+             STRING_AGG(dc.ReportingColumnName, ', ') + ')
+         SELECT ' + STRING_AGG(ISNULL(dc.TransformationRules, dc.StagingColumnName), ', ') + '
+         FROM CTE_Batched
+         WHERE rn BETWEEN @StartRow AND @EndRow;
 
-    IF @@ROWCOUNT = 0 BREAK;
+         IF @@ROWCOUNT = 0 BREAK;
 
-    SET @StartRow = @StartRow + @BatchSize;
-END
-';
+         SET @StartRow = @StartRow + @BatchSize;
+     END'
+FROM ClaimsStage.ETL.Dynamic_Column_Mapping dc
+WHERE dc.SchemaName = @SchemaName
+  AND dc.StagingTableName = @StagingTableName
+GROUP BY
+     dc.SchemaName,
+     dc.StagingDatabaseName,
+     dc.StagingTableName,
+     dc.ReportingDatabaseName,
+     dc.ReportingTableName;
 
