@@ -1,60 +1,78 @@
-CREATE PROCEDURE dbo.GetDailyPayorSummary
-AS
-BEGIN
-    DECLARE @EmailBody VARCHAR(MAX);  
-    SET @EmailBody = '';  
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
-    -- HTML start with basic inline CSS
+	DROP TABLE IF EXISTS #ETL_TABLE_DATA
+
+	CREATE TABLE #ETL_TABLE_DATA (
+		[Payor] VARCHAR(255)
+	  , [RowInsertDateTime] DATETIME
+	  , [EffectiveKey] INT
+	  , [RowNum] INT
+	  , [SourceFileName] VARCHAR(255)
+	);
+
+	CREATE NONCLUSTERED INDEX IDX_ETL_TABLE_DATA ON #ETL_TABLE_DATA ([RowInsertDateTime] DESC) INCLUDE ([Payor], [EffectiveKey], [RowNum], [SourceFileName]);
+
+	INSERT INTO #ETL_TABLE_DATA WITH (TABLOCKX)
+	SELECT TD.*
+	FROM (
+
+	--100 Claims Tables using UNION ALL PER SELECT
+
+	) AS TD
+	ORDER BY
+		TD.RowInsertDateTime DESC
+	;
+
+	DECLARE @NUMBER_OF_NEW_FILES_TODAY AS INT = 0
+	DECLARE @TODAY						AS DATETIME = CAST(CAST(GETDATE() AS DATE) AS DATETIME);
+	DECLARE @TODAY_DATE_STRING			AS CHAR(10)	= CONVERT(CHAR(10), @TODAY, 120);
+
+	SELECT @NUMBER_OF_NEW_FILES_TODAY = COUNT(*)
+	FROM [#ETL_TABLE_DATA] AS [ETD]
+	WHERE	
+		(ETD.[RowInsertDateTime] >= @TODAY)
+	;
+
+	DECLARE @EmailBody		VARCHAR(MAX);
+	DECLARE @EmailSubject	VARCHAR(500) = CONCAT('Payor Roster Morning Report - '
+												 , @TODAY_DATE_STRING
+												 , CASE WHEN (@NUMBER_OF_NEW_FILES_TODAY > 0) THEN CONCAT(' - ', CAST(@NUMBER_OF_NEW_FILES_TODAY AS VARCHAR(6)), ' New Files') ELSE '' END
+										   ); 
+
+    -- Start HTML table structure with a header row
     SET @EmailBody = 
-        '<html><body>' +
-        '<h2 style="color:#2E86C1; font-family: Arial, sans-serif;">Daily Payor Table Summary</h2>' +
-        '<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse; width:100%; font-family: Arial, sans-serif; border-color:#ddd;">' +
-        '<thead style="background-color:#2E86C1; color:#FFFFFF;">' +
-        '<tr><th>Payor</th><th>Most Recent InsertDateTime</th><th>EffectiveKey</th><th>RowCount</th><th>SourceFileName</th></tr>' +
-        '</thead><tbody>';
+        '<html>' + 
+		'<body>' +
+			'<h2 style="color:#2E86C1; font-family: Arial, sans-serif;">Daily Payor Membership ETL Summary</h2>' +
+			'<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse; width:100%; font-family: Arial, sans-serif; border-color:#ddd;">' +
+			'<thead style="background-color:#2E86C1; color:#FFFFFF;">' +
+				'<tr>' +
+					'<th>Payor</th>' + 
+					'<th>Most Recent InsertDateTime</th>' +
+					'<th>EffectiveKey</th>' +
+					'<th>RowCount</th>' +
+					'<th>SourceFileName</th>'+
+				'</tr>' +
+			'</thead>' +
+		'<tbody>';
 
-    -- Construct the table rows using STRING_AGG across payor tables
+    -- Use STRING_AGG to combine each payor's data; if no data, default message
     SET @EmailBody += ISNULL((
         SELECT 
             STRING_AGG(
-                '<tr><td style="padding:8px;">' + Payor + '</td><td style="padding:8px;">' + 
-                CONVERT(VARCHAR, InsertDateTime, 120) + '</td><td style="padding:8px;">' +
-                CAST(EffectiveKey AS VARCHAR) + '</td><td style="padding:8px;">' + 
-                CAST(RowCount AS VARCHAR) + '</td><td style="padding:8px;">' + 
-                ISNULL(SourceFileName, '') + '</td></tr>', 
-                '') 
-        FROM (
-            SELECT TOP 1 'Aetna' AS Payor, InsertDateTime, EffectiveKey, RowCount, SourceFileName FROM Aetna ORDER BY InsertDateTime DESC
-            UNION ALL
-            SELECT TOP 1 'Anthem' AS Payor, InsertDateTime, EffectiveKey, RowCount, SourceFileName FROM Anthem ORDER BY InsertDateTime DESC
-            UNION ALL
-            SELECT TOP 1 'Cigna' AS Payor, InsertDateTime, EffectiveKey, RowCount, SourceFileName FROM Cigna ORDER BY InsertDateTime DESC
-        ) AS PayorData
+                CAST('<tr>' AS VARCHAR(MAX)) +
+					CAST('<td style="padding:8px;">' AS VARCHAR(MAX)) + CAST(TD.Payor AS VARCHAR(MAX))																		+ CAST('</td>' AS VARCHAR(MAX)) +
+					CAST('<td style="padding:8px;">' AS VARCHAR(MAX)) + CAST(CONVERT(VARCHAR(24), TD.RowInsertDateTime, 121 /* yyyy-mm-dd hh:mm:ss.### */) AS VARCHAR(MAX))	+ CAST('</td>' AS VARCHAR(MAX)) + 
+					CAST('<td style="padding:8px;">' AS VARCHAR(MAX)) + CAST(CAST(TD.EffectiveKey AS CHAR(6)) AS VARCHAR(MAX))												+ CAST('</td>' AS VARCHAR(MAX)) + 
+					CAST('<td style="padding:8px;">' AS VARCHAR(MAX)) + CAST(FORMAT(TD.RowNum, '#,###') AS VARCHAR(MAX))													+ CAST('</td>' AS VARCHAR(MAX)) +
+					CAST('<td style="padding:8px;">'  AS VARCHAR(MAX))+ CAST(ISNULL(TD.SourceFileName, '') AS VARCHAR(MAX))													+ CAST('</td>' AS VARCHAR(MAX)) + 
+				CAST('</tr>' AS VARCHAR(MAX)),'') WITHIN GROUP (ORDER BY TD.RowInsertDateTime DESC) 
+        FROM [#ETL_TABLE_DATA] AS [TD] 
     ), '<tr><td colspan="5" style="text-align:center;">No data available</td></tr>');
 
-    -- HTML end
+    -- Close HTML tags
     SET @EmailBody += '</tbody></table></body></html>';
 
-    -- Output the EmailBody
-    SELECT @EmailBody AS EmailBody;  
-END;
-
-
-
-
-public void Main()
-{
-    // Cast the EmailBody variable from Object to String
-    string emailBody = string.Empty;
-
-    // Check if EmailBody is not null and convert
-    if (Dts.Variables["User::EmailBody"].Value != null)
-    {
-        emailBody = Dts.Variables["User::EmailBody"].Value.ToString();
-    }
-
-    // Assign the email body to the new string variable
-    Dts.Variables["User::EmailBodyString"].Value = emailBody;
-
-    Dts.TaskResult = (int)ScriptResults.Success;
-}
+    -- Output the HTML formatted data
+    SELECT ISNULL(@EmailBody, 'Error') AS EmailBody
+		 , @EmailSubject AS EmailSubject;
